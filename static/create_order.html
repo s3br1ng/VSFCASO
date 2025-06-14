@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Подать заявку</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-wide">
+        <form id="create-Order-form">
+            <h2>Подать заявку</h2>
+
+            <label for="client">Клиент</label>
+            <input type="text" id="client" disabled placeholder="Загружается...">
+
+            <label for="name">Название заявки</label>
+            <input type="text" id="name" placeholder="Название заявки" required>
+
+            <label for="urgent">Срочная заявка</label>
+            <input type="checkbox" id="urgent">
+
+            <label for="description">Подробное описание заявки</label>
+            <textarea id="description" placeholder="Подробное описание заявки" rows="4" required></textarea>
+
+            <button type="submit">Подать</button>
+            <p id="error-message" style="color: red;"></p>
+        </form>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        if (!token) {
+            alert("Вы не авторизованы. Пожалуйста, войдите в систему.");
+            window.location.href = 'login.html';
+        }
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/profile?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) {
+                    const user = await response.json();
+                    const fullName = `${user.last_name} ${user.first_name} ${user.patronymic}`;
+                    document.getElementById('client').value = fullName;
+                }
+            } catch (err) {
+                console.error("Ошибка загрузки данных пользователя:", err);
+            }
+        }
+
+        const form = document.getElementById('create-Order-form');
+        const errorMessage = document.getElementById('error-message');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value.trim();
+            const urgent = document.getElementById('urgent').checked;
+            const description = document.getElementById('description').value.trim();
+            const status = "not started";
+            const master = "Не назначен";
+
+            if (!name || !description) {
+                errorMessage.textContent = "Пожалуйста, заполните все обязательные поля.";
+                return;
+            }
+
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/Orders/?token=${token}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, urgent, description, status, master })
+                });
+
+                if (response.ok) {
+                    alert('Заявка успешно создана!');
+                    window.location.href = 'orders.html';
+                } else {
+                    const errorData = await response.json();
+                    errorMessage.textContent = errorData.detail || 'Не удалось подать заявку.';
+                }
+            } catch (err) {
+                console.error(err);
+                errorMessage.textContent = 'Произошла ошибка при отправке данных.';
+            }
+        });
+        loadUserInfo();
+    </script>
+</body>
+</html>

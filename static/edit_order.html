@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Редактировать заявку</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+    
+    <div class="container-wide">
+        <form id="edit-order-form">
+            <h2>Редактировать заявку</h2>
+            <label for="name">Название</label>
+            <input type="text" id="name" required>
+            <label for="urgent">Срочное</label>
+            <input type="checkbox" id="urgent">
+            <label for="description">Описание</label>
+            <textarea id="description" rows="4" required></textarea>
+            <label for="status">Статус</label>
+            <select id="status">
+                <option value="not started">Не начата</option>
+                <option value="in progress">В процессе</option>
+                <option value="completed">Завершена</option>
+            </select>
+            <button type="submit">Сохранить</button>
+            <p id="error-message"></p>
+        </form>
+    </div>
+    
+    <script>
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+
+        if (!token || !orderId) {
+            window.location.href = 'login.html';
+        }
+
+        async function checkUserRole() {
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/profile?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Ошибка проверки прав');
+                const user = await response.json();
+                if (user.role !== 'technic' && user.role !== 'admin') {
+                    window.location.href = 'orders.html';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Ошибка проверки прав');
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function loadOrderData() {
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/Orders/${orderId}?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Ошибка загрузки данных');
+                const order = await response.json();
+                document.getElementById('name').value = order.name;
+                document.getElementById('urgent').checked = order.urgent;
+                document.getElementById('description').value = order.description;
+                document.getElementById('status').value = order.status;
+            } catch (err) {
+                alert(err.message);
+                window.location.href = 'technic_edit_orders.html';
+            }
+        }
+
+        document.getElementById('edit-order-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const updatedData = {
+                name: document.getElementById('name').value,
+                urgent: document.getElementById('urgent').checked,
+                description: document.getElementById('description').value,
+                status: document.getElementById('status').value
+            };
+
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/Orders/${orderId}/update?token=${token}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(updatedData)
+                });
+                if (response.ok) {
+                    alert('Заявка обновлена');
+                    window.location.href = 'technic_edit_orders.html';
+                } else {
+                    const errorData = await response.json();
+                    document.getElementById('error-message').textContent = errorData.detail || 'Ошибка сохранения';
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Ошибка при сохранении данных');
+            }
+        });
+
+        checkUserRole();
+        loadOrderData();
+    </script>
+</body>
+</html>

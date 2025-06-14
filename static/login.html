@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="login.html" class="nav-button">Вход</a>
+        <a href="register.html" class="nav-button">Регистрация</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-small">
+        <form id="login-form">
+            <h2>Вход</h2>
+            <input type="text" id="nickname" placeholder="Никнейм" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            <button type="submit">Войти</button>
+            <p id="error-message"></p>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nickname = document.getElementById('nickname').value;
+            const password = document.getElementById('password').value;
+
+            const response = await fetch('http://212.67.12.137:8000/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, password })
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                localStorage.setItem('token', data.access_token);
+                window.location.href = 'orders.html';
+            } else {
+                errorMessage.textContent = 'Неверный никнейм или пароль';
+            }
+        });
+    </script>
+</body>
+</html>

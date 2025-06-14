@@ -1,0 +1,81 @@
+<!-- static/order_details.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Детали заявки</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-small">
+        <h2>Детали заявки</h2>
+        <div id="order-details">
+
+        </div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('id');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        if (!token || !orderId) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadOrderDetails() {
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/Orders/${orderId}?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) throw new Error("Ошибка загрузки данных");
+
+                const order = await response.json();
+
+                document.getElementById('order-details').innerHTML = `
+                    <p><strong>ID:</strong> ${order.id}</p>
+                    <p><strong>Название:</strong> ${order.name}</p>
+                    <p><strong>Срочность:</strong> ${order.urgent ? "Да" : "Нет"}</p>
+                    <p><strong>Описание:</strong> ${order.description}</p>
+                    <p><strong>Статус:</strong> ${order.status}</p>
+                    <p><strong>Клиент:</strong> ${order.client}</p>
+                    <p><strong>Мастер:</strong> ${order.master || "—"}</p>
+                `;
+            } catch (err) {
+                alert("Не удалось загрузить детали заявки");
+                window.location.href = 'orders.html';
+            }
+        }
+
+        loadOrderDetails();
+    </script>
+</body>
+</html>

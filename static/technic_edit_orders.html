@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Модерация</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div id="access-denied" style="display: none; text-align: center; color: red; margin-top: 20px;">
+        <h2>Доступ запрещён</h2>
+        <p>Вы не имеете прав для просмотра этой страницы.</p>
+        <button onclick="window.location.href='orders.html'">На главную</button>
+    </div>
+
+    <div class="container-wide" id="main-content">
+        <h2>Модерирование заявок</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Срочность</th>
+                    <th>Описание</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="orders_table">
+            </tbody>
+        </table>
+        <p id="error-message" style="color: red; text-align: center;"></p>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        if (!token) window.location.href = 'login.html';
+
+        async function checkUserRole() {
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/profile?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Ошибка проверки прав');
+                return await response.json();
+            } catch (err) {
+                alert('Ошибка проверки прав');
+                window.location.href = 'login.html';
+            }
+        }
+
+        function showAccessDenied() {
+            document.getElementById('main-content').style.display = 'none';
+            document.getElementById('access-denied').style.display = 'block';
+        }
+
+        async function loadOrders() {
+            try {
+                const user = await checkUserRole();
+
+                if (user.role !== 'technic' && user.role !== 'admin') {
+                    showAccessDenied();
+                    return;
+                }
+
+                const response = await fetch(`http://212.67.12.137:8000/Orders/?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (!response.ok) throw new Error('Ошибка загрузки заявок');
+                const orders = await response.json();
+
+                const tableBody = document.getElementById('orders_table');
+                tableBody.innerHTML = '';
+                if (orders.length === 0) {
+                    tableBody.innerHTML = '<tr><td colspan="6">Нет заявок</td></tr>';
+                    return;
+                }
+
+                orders.forEach(order => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${order.id}</td>
+                        <td>${order.name}</td>
+                        <td>${order.urgent}</td>
+                        <td>${order.description}</td>
+                        <td>${order.status}</td>
+                        <td>
+                            <button onclick="editOrder(${order.id})">Редактировать</button>
+                        </td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } catch (err) {
+                document.getElementById('error-message').textContent = err.message;
+            }
+        }
+
+        function editOrder(orderId) {
+            window.location.href = `edit_order.html?id=${orderId}`;
+        }
+
+        loadOrders();
+    </script>
+</body>
+</html>

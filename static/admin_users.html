@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Пользователи</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-wide">
+        <h2>Список пользователей</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Никнейм</th>
+                    <th>Роль</th>
+                    <th>ФИО</th>
+                    <th>Дата рождения</th>
+                    <th>Отдел</th>
+                    <th>Должность</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody id="users-table"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        async function checkAdminRole() {
+            try {
+                const res = await fetch(`http://212.67.12.137:8000/profile?token=${token}`);
+                const user = await res.json();
+                if (user.role !== 'admin') {
+                    alert("Доступ запрещён");
+                    window.location.href = 'login.html';
+                }
+            } catch (err) {
+                console.error(err);
+                window.location.href = 'login.html';
+            }
+        }
+
+        async function loadUsers() {
+            try {
+                const res = await fetch(`http://212.67.12.137:8000/admin/users?token=${token}`);
+                const users = await res.json();
+                const tbody = document.getElementById('users-table');
+                tbody.innerHTML = '';
+                users.forEach(user => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${user.id}</td>
+                        <td>${user.nickname}</td>
+                        <td>${user.role}</td>
+                        <td>${user.last_name} ${user.first_name} ${user.patronymic}</td>
+                        <td>${user.date_of_birth}</td>
+                        <td>${user.department}</td>
+                        <td>${user.position}</td>
+                        <td>
+                            <button onclick="editUser(${user.id})">Редактировать</button>
+                            <button onclick="deleteUser(${user.id})">Удалить</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            } catch (err) {
+                console.error("Ошибка загрузки пользователей:", err);
+            }
+        }
+
+        function editUser(id) {
+            window.location.href = `admin_edit_user.html?id=${id}`;
+        }
+
+        async function deleteUser(id) {
+            if (!confirm("Удалить пользователя?")) return;
+            const res = await fetch(`http://212.67.12.137:8000/admin/users/${id}/delete?token=${token}`, {
+                method: "DELETE"
+            });
+            if (res.ok) loadUsers();
+            else {
+                const error = await res.json();
+                alert(error.detail || "Ошибка удаления");
+            }
+        }
+
+        checkAdminRole().then(loadUsers);
+    </script>
+</body>
+</html>

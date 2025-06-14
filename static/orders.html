@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Заявки</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-wide">
+        <h2>Фильтрация заявок</h2>
+        <form id="filter-form">
+    <label>Статус:
+        <select name="status">
+            <option value="">Все</option>
+            <option value="not started">Не начата</option>
+            <option value="in progress">В процессе</option>
+            <option value="completed">Завершена</option>
+        </select>
+    </label>
+    <label>Срочность:
+        <input type="checkbox" name="urgent">
+    </label>
+    <label>Клиент:
+        <input type="text" name="client">
+    </label>
+    <label>Мастер:
+        <input type="text" name="master">
+    </label>
+    <button type="submit">Применить</button>
+    <button type="button" onclick="resetFilters()">Сбросить</button>
+</form>
+
+    <h2>Заявки</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Срочность</th>
+                    <th>Описание</th>
+                    <th>Статус готовности</th>
+                    <th>Клиент</th>
+                    <th>Мастер</th>
+                </tr>
+            </thead>
+            <tbody id="orders-table">
+            </tbody>
+        </table>
+        <p id="error-message" style="color: red; text-align: center;"></p>
+    </div>
+
+    
+
+<script>
+    const token = localStorage.getItem('token');
+    const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+        
+    if (!token) {
+        window.location.href = 'login.html';
+    }
+
+    function getStatusLabel(status) {
+        switch (status) {
+            case "not started":
+                return '<span class="status-tag status-not-started">Не начата</span>';
+            case "in progress":
+                return '<span class="status-tag status-in-progress">В процессе</span>';
+            case "completed":
+                return '<span class="status-tag status-completed">Завершена</span>';
+            default:
+                return status;
+        }
+    }
+
+    function updateTable(orders) {
+        const tableBody = document.getElementById('orders-table');
+        tableBody.innerHTML = '';
+        if (orders.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="7">Нет доступных заявок</td></tr>';
+            return;
+        }
+
+        orders.forEach(order => {
+            const row = document.createElement('tr');
+            row.style.cursor = "pointer";
+            row.onclick = () => {
+                window.location.href = `order_details.html?id=${order.id}`;
+            };
+            row.innerHTML = `
+                <td>${order.id}</td>
+                <td>${order.name}</td>
+                <td>${order.urgent ? "Да" : "Нет"}</td>
+                <td>${order.description.substring(0, 50)}${order.description.length > 50 ? "..." : ""}</td>
+                <td>${getStatusLabel(order.status)}</td>
+                <td>${order.client || "—"}</td>
+                <td>${order.master || "—"}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    async function loadOrders() {
+        try {
+            const response = await fetch(`http://212.67.12.137:8000/Orders/?token=${token}`);
+            const orders = await response.json();
+            updateTable(orders);
+        } catch (err) {
+            document.getElementById('error-message').textContent = 'Ошибка загрузки данных.';
+            console.error(err);
+        }
+    }
+
+    document.getElementById('filter-form')?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const params = new URLSearchParams();
+
+        for (const [key, value] of formData.entries()) {
+            if (value) params.append(key, value);
+        }
+
+        try {
+            const res = await fetch(`http://212.67.12.137:8000/Orders/filter?token=${token}&${params}`);
+            const orders = await res.json();
+            updateTable(orders);
+        } catch (err) {
+            console.error("Ошибка фильтрации:", err);
+        }
+    });
+
+    function resetFilters() {
+        document.getElementById('filter-form').reset();
+        loadOrders();
+    }
+
+    loadOrders();
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="login.html" class="nav-button">Вход</a>
+        <a href="register.html" class="nav-button">Регистрация</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-small">
+        <form id="register-form">
+            <h2>Регистрация</h2>
+            <input type="text" id="nickname" placeholder="Никнейм" required>
+            <input type="password" id="password" placeholder="Пароль" required>
+            <input type="text" id="first_name" placeholder="Имя" required>
+            <input type="text" id="last_name" placeholder="Фамилия" required>
+            <input type="text" id="patronymic" placeholder="Отчество" required>
+            <input type="date" id="date_of_birth" required>
+            <input type="text" id="department" placeholder="Отдел" required>
+            <input type="text" id="position" placeholder="Должность" required>
+            <button type="submit">Зарегистрироваться</button>
+            <p id="error-message" style="color: red;"></p>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('register-form');
+        const errorMessage = document.getElementById('error-message');
+        const themeToggle = document.getElementById('theme-toggle');
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌞';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌙';
+            }
+    });
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const nickname = document.getElementById('nickname').value;
+            const password = document.getElementById('password').value;
+            const role = "user";
+            const first_name = document.getElementById('first_name').value;
+            const last_name = document.getElementById('last_name').value;
+            const patronymic = document.getElementById('patronymic').value;
+            const date_of_birth = document.getElementById('date_of_birth').value;
+            const department = document.getElementById('department').value;
+            const position = document.getElementById('position').value;
+
+            const response = await fetch('http://212.67.12.137:8000/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ nickname, password, role, first_name, last_name, patronymic, date_of_birth, department, position})
+            });
+
+            if (response.ok) {
+                window.location.href = 'login.html';
+            } else {
+                errorMessage.textContent = 'Такой никнейм уже занят';
+            }
+        });
+    </script>
+</body>
+</html>

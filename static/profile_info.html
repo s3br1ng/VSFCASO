@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="nav-bar">
+        <a href="orders.html" class="nav-button">Заявки</a>
+        <a href="create_order.html" class="nav-button">Подать заявку</a>
+        <a href="profile_info.html" class="nav-button">Профиль</a>
+        <a href="technic_edit_orders.html" class="nav-button">Управление заявками</a>
+        <a href="admin_users.html" class="nav-button">Управление пользователями</a>
+        <button id="theme-toggle" class="nav-button">🌞</button>
+    </div>
+
+    <div class="container-small">
+        <h2>Информация о пользователе</h2>
+        <div id="user-info"></div>
+        <button onclick="logout()">Выйти</button>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const themeToggle = document.getElementById('theme-toggle');    
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch(`http://212.67.12.137:8000/profile?token=${token}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const user = await response.json();
+                    document.getElementById('user-info').innerHTML = `
+                    ID: ${user.id}<br>
+                    Никнейм: ${user.nickname}<br>
+                    Роль: ${user.role}<br>
+                    Имя: ${user.first_name}<br>
+                    Фамилия: ${user.last_name}<br>
+                    Отчество: ${user.patronymic}<br>
+                    Дата рождения: ${user.date_of_birth}<br>
+                    Отдел: ${user.department}<br>
+                    Должность: ${user.position}
+                    `;}
+            } catch (err) {
+                document.getElementById('user-info').textContent = 'Произошла ошибка при загрузке данных.';
+                console.error(err);
+            }
+        }
+
+
+        loadUserInfo();
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

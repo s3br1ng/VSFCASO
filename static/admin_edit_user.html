@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Редактировать пользователя</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+
+    <div class="nav-bar">
+        <a href="admin_users.html" class="nav-button">Назад</a>
+    </div>
+
+    <div class="container-small">
+        <h2>Редактировать пользователя</h2>
+        <form id="edit-user-form">
+            <label>Никнейм</label>
+            <input type="text" id="nickname" disabled>
+
+            <label>Роль</label>
+            <select id="role">
+                <option value="user">Пользователь</option>
+                <option value="technic">Техник</option>
+                <option value="admin">Администратор</option>
+            </select>
+
+            <label>Имя</label>
+            <input type="text" id="first_name" required>
+
+            <label>Фамилия</label>
+            <input type="text" id="last_name" required>
+
+            <label>Отчество</label>
+            <input type="text" id="patronymic" required>
+
+            <label>Дата рождения</label>
+            <input type="date" id="date_of_birth" required>
+
+            <label>Отдел</label>
+            <input type="text" id="department" required>
+
+            <label>Должность</label>
+            <input type="text" id="position" required>
+
+            <button type="submit">Сохранить</button>
+        </form>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('token');
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('id');
+        const themeToggle = document.getElementById('theme-toggle');    
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-theme');
+            themeToggle.textContent = '🌙';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-theme');
+            if (document.body.classList.contains('light-theme')) {
+                localStorage.setItem('theme', 'light');
+                themeToggle.textContent = '🌙';
+            } else {
+                localStorage.setItem('theme', 'dark');
+                themeToggle.textContent = '🌞';
+            }
+        });
+
+        async function loadUserInfo() {
+            try {
+                const res = await fetch(`http://212.67.12.137:8000/admin/users/${userId}?token=${token}`);
+                const user = await res.json();
+                document.getElementById('nickname').value = user.nickname;
+                document.getElementById('role').value = user.role;
+                document.getElementById('first_name').value = user.first_name;
+                document.getElementById('last_name').value = user.last_name;
+                document.getElementById('patronymic').value = user.patronymic;
+                document.getElementById('date_of_birth').value = user.date_of_birth;
+                document.getElementById('department').value = user.department;
+                document.getElementById('position').value = user.position;
+            } catch (err) {
+                alert("Ошибка загрузки данных");
+                window.location.href = 'admin_users.html';
+            }
+        }
+
+        document.getElementById('edit-user-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const updatedData = {
+                nickname: document.getElementById('nickname').value,
+                role: document.getElementById('role').value,
+                first_name: document.getElementById('first_name').value,
+                last_name: document.getElementById('last_name').value,
+                patronymic: document.getElementById('patronymic').value,
+                date_of_birth: document.getElementById('date_of_birth').value,
+                department: document.getElementById('department').value,
+                position: document.getElementById('position').value
+            };
+            const res = await fetch(`http://212.67.12.137:8000/admin/users/${userId}/update?token=${token}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData)
+            });
+            if (res.ok) {
+                alert("Данные обновлены");
+                window.location.href = 'admin_users.html';
+            } else {
+                const error = await res.json();
+                alert(error.detail || "Ошибка сохранения");
+            }
+        });
+
+        loadUserInfo();
+    </script>
+</body>
+</html>
