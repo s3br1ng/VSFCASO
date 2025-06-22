@@ -83,15 +83,6 @@ h2 {
     padding: 20px;
 }
 
-/* Контейнер большого размера (для таблицы заявок) */
-.container-wide {
-    margin-top: 100px;
-    min-height: 300px;
-    max-width: 60%;
-    width: 100%;
-    padding: 20px;
-}
-
 /* Стили для форм */
 form {
     display: flex;
