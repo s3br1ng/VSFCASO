@@ -60,8 +60,6 @@ h2 {
 }
 
 /* Базовый контейнер для всех страниц */
-.container-base,
-.container-small,
 .container-wide {
     background-color: #1e1e1e;
     padding: 20px;
